@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --bg-archive: #09090b;
-  --surface-card: #121215;
-  --surface-card-hover: #18181c;
-  --border-card: #1f1f23;
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-muted: #71717a;
+  --bg-archive: #0d0e11;
+  --surface-card: #14151a;
+  --surface-card-hover: #1b1c23;
+  --border-card: #22242b;
+  --text-primary: #e6e4df;
+  --text-secondary: #9a9c9f;
+  --text-muted: #6e7075;
 }
 
 body {
@@ -20,7 +20,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Minimal Typography Tokens */
+/* Scholarly Minimal Typography Tokens */
 .font-serif-archive {
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   letter-spacing: -0.02em;
@@ -31,59 +31,59 @@ body {
   letter-spacing: 0.02em;
 }
 
-/* Archival Card Styling - Minimal Peaceful Monochrome */
+/* Archival Card Styling - Scholarly Charcoal & Titanium */
 .archive-card {
   background: var(--surface-card);
   border: 1px solid var(--border-card);
   border-radius: 8px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
   position: relative;
   transition: all 0.2s ease-in-out;
 }
 
 .archive-card:hover {
-  border-color: #27272a;
+  border-color: #2d303a;
   background: var(--surface-card-hover);
 }
 
 .archive-card-header {
-  border-bottom: 1px solid #1f1f23;
+  border-bottom: 1px solid #22242b;
   padding: 0.75rem 1.25rem;
 }
 
-/* Minimal Monochrome Primary Button */
+/* Scholarly Soft Ivory Primary Button (No Blinding White) */
 .btn-monochrome-primary {
-  background-color: #ffffff;
-  color: #09090b;
+  background-color: #e6e4df;
+  color: #0d0e11;
   font-weight: 600;
   border-radius: 6px;
   transition: all 0.15s ease-in-out;
-  border: 1px solid #ffffff;
+  border: 1px solid #e6e4df;
 }
 
 .btn-monochrome-primary:hover {
-  background-color: #e4e4e7;
-  border-color: #e4e4e7;
+  background-color: #d6d4cf;
+  border-color: #d6d4cf;
   transform: translateY(-1px);
 }
 
-/* Minimal Monochrome Secondary Button */
+/* Scholarly Slate Secondary Button */
 .btn-monochrome-secondary {
-  background-color: #18181b;
-  color: #fafafa;
+  background-color: #1b1c23;
+  color: #e6e4df;
   font-weight: 500;
-  border: 1px solid #27272a;
+  border: 1px solid #282a33;
   border-radius: 6px;
   transition: all 0.15s ease-in-out;
 }
 
 .btn-monochrome-secondary:hover {
-  background-color: #27272a;
-  border-color: #3f3f46;
+  background-color: #242630;
+  border-color: #363845;
   color: #ffffff;
 }
 
-/* Ink Stamp Badges - Minimal Monochrome */
+/* Ink Stamp Badges - Tactile Scholarly Library Badges */
 .ink-stamp {
   display: inline-flex;
   align-items: center;
@@ -99,27 +99,27 @@ body {
 }
 
 .ink-stamp-completed {
-  color: #fafafa;
-  border-color: #3f3f46;
-  background-color: #18181b;
+  color: #e6e4df;
+  border-color: #363845;
+  background-color: #1b1c23;
 }
 
 .ink-stamp-drawn {
-  color: #e4e4e7;
-  border-color: #27272a;
-  background-color: #141416;
+  color: #c4c2bd;
+  border-color: #282a33;
+  background-color: #14151a;
 }
 
 .ink-stamp-public {
-  color: #fafafa;
-  border-color: #3f3f46;
-  background-color: #18181b;
+  color: #e6e4df;
+  border-color: #363845;
+  background-color: #1b1c23;
 }
 
 .ink-stamp-private {
-  color: #71717a;
-  border-color: #27272a;
-  background-color: #121215;
+  color: #8a8c91;
+  border-color: #22242b;
+  background-color: #111216;
 }
 
 /* Custom Scrollbar */
@@ -129,16 +129,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: #0d0e11;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: #22242b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: #363845;
 }
 
 /* Rolodex Reel Keyframe Animation */

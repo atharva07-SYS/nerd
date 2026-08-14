@@ -28,17 +28,17 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
-      <body className="bg-[#09090b] text-[#fafafa] antialiased min-h-screen flex flex-col selection:bg-zinc-800 selection:text-white font-sans">
+      <body className="bg-[#0d0e11] text-[#e6e4df] antialiased min-h-screen flex flex-col selection:bg-[#25272e] selection:text-[#e6e4df] font-sans">
         <Providers>
           <Navbar />
           <main className="flex-1">{children}</main>
-          <footer className="border-t border-[#18181b] py-8 text-center font-mono-archive text-xs text-zinc-500">
+          <footer className="border-t border-[#1e2026] py-8 text-center font-mono-archive text-xs text-[#8a8c91]">
             <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-2">
-                <span className="text-white font-semibold tracking-wider">THE DRAW</span>
-                <span className="text-zinc-600">— ARCHIVAL INDEX SYSTEM</span>
+                <span className="text-[#e6e4df] font-semibold tracking-wider">THE DRAW</span>
+                <span className="text-[#6e7075]">— ARCHIVAL INDEX SYSTEM</span>
               </div>
-              <p className="text-zinc-500">
+              <p className="text-[#8a8c91]">
                 Independent Per-User Randomization & Shared Master Catalog
               </p>
             </div>
