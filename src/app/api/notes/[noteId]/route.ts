@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import { db } from "@/lib/db";
 
-// DELETE: Remove a note owned by current user
+// DELETE: Remove a note (Owner/Admin or Note Author)
 export async function DELETE(
   req: Request,
   { params }: { params: Promise<{ noteId: string }> }
@@ -16,6 +16,7 @@ export async function DELETE(
 
     const { noteId } = await params;
     const userId = session.user.id;
+    const isOwnerOrAdmin = session.user.role === "admin";
 
     const note = await db.note.findUnique({
       where: { id: noteId },
@@ -25,8 +26,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Note not found." }, { status: 404 });
     }
 
-    if (note.userId !== userId) {
-      return NextResponse.json({ error: "Forbidden: Not your note." }, { status: 403 });
+    // Allow deletion if user is note author OR platform owner/admin
+    if (note.userId !== userId && !isOwnerOrAdmin) {
+      return NextResponse.json({ error: "Forbidden: You do not have permission to delete this note." }, { status: 403 });
     }
 
     await db.note.delete({

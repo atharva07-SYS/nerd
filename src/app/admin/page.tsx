@@ -334,16 +334,21 @@ export default function AdminPage() {
   const handleDeleteNoteAdmin = async (noteId: string) => {
     if (!confirm("Are you sure you want to delete this note from the platform as Owner?")) return;
 
+    // Optimistic UI update: Remove note immediately from local state
+    setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    setSelectedNote(null);
+
     try {
       const res = await fetch(`/api/admin/notes?noteId=${noteId}`, { method: "DELETE" });
       if (res.ok) {
-        setSelectedNote(null);
         fetchAdminData();
       } else {
         alert("Failed to delete note.");
+        fetchAdminData();
       }
     } catch {
       alert("Error deleting note.");
+      fetchAdminData();
     }
   };
 

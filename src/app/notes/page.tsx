@@ -93,18 +93,26 @@ export default function MyNotesPage() {
       return;
     }
 
+    // Optimistic UI update: Remove note immediately from local state
+    setItems((prev) =>
+      prev.map((it) => (it.note?.id === noteId ? { ...it, note: null } : it))
+    );
+    setEditTopic(null);
+
     setDeletingNoteId(noteId);
     try {
       const res = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
       if (res.ok) {
-        setEditTopic(null);
+        router.refresh();
         fetchNotes();
       } else {
         const data = await res.json();
         alert(data.error || "Failed to delete note.");
+        fetchNotes(); // Re-sync if API returned error
       }
     } catch {
       alert("Unexpected error deleting note.");
+      fetchNotes();
     } finally {
       setDeletingNoteId(null);
     }
