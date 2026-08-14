@@ -63,7 +63,7 @@ export async function GET() {
   }
 }
 
-// POST: Save or update handwritten notes for a completed topic
+// POST: Save or update handwritten notes / PDFs for a topic (Existing or Custom Searched)
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -73,15 +73,38 @@ export async function POST(req: Request) {
 
     const userId = session.user.id;
     const body = await req.json();
-    const { topicId, imageUrls, caption, visibility } = body;
+    let { topicId, customTitle, customCategory, imageUrls, caption, visibility } = body;
+
+    // Support creating notes for custom searched topics
+    if (!topicId && customTitle) {
+      const cleanTitle = customTitle.trim();
+      const cleanCategory = (customCategory || "General Research").trim();
+
+      let existingTopic = await db.topic.findFirst({
+        where: { title: cleanTitle },
+      });
+
+      if (!existingTopic) {
+        existingTopic = await db.topic.create({
+          data: {
+            title: cleanTitle,
+            category: cleanCategory,
+          },
+        });
+      }
+      topicId = existingTopic.id;
+    }
 
     if (!topicId) {
-      return NextResponse.json({ error: "Topic ID is required." }, { status: 400 });
+      return NextResponse.json({ error: "Topic ID or Topic Title is required." }, { status: 400 });
     }
 
     const safeImageUrls = Array.isArray(imageUrls) ? imageUrls : [];
     if (safeImageUrls.length === 0 && !caption) {
-      return NextResponse.json({ error: "Please provide either handwritten note images or a caption summary." }, { status: 400 });
+      return NextResponse.json(
+        { error: "Please upload at least one image/PDF attachment or write a caption summary." },
+        { status: 400 }
+      );
     }
 
     // Verify user has topic progress
@@ -91,7 +114,7 @@ export async function POST(req: Request) {
       },
     });
 
-    // If progress does not exist or is drawn, mark as completed
+    // Auto-complete progress for this searched topic
     if (!progress || progress.status !== "completed") {
       const now = new Date();
       progress = await db.userTopicProgress.upsert({

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -15,19 +15,22 @@ import {
   FileImage,
   FileText,
   ExternalLink,
+  Search,
   X,
   AlertCircle,
   Edit3,
   Trash2,
 } from "lucide-react";
 
+interface Topic {
+  id: string;
+  category: string;
+  title: string;
+}
+
 interface NoteItem {
   progressId: string;
-  topic: {
-    id: string;
-    category: string;
-    title: string;
-  };
+  topic: Topic;
   completedAt: string;
   note: {
     id: string;
@@ -49,10 +52,16 @@ export default function MyNotesPage() {
   const router = useRouter();
 
   const [items, setItems] = useState<NoteItem[]>([]);
+  const [allTopics, setAllTopics] = useState<Topic[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Search & Freedom Topic Selector State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+
   // Edit / Add note modal state
-  const [editTopic, setEditTopic] = useState<NoteItem["topic"] | null>(null);
+  const [editTopic, setEditTopic] = useState<Topic | null>(null);
+  const [customTopicTitle, setCustomTopicTitle] = useState("");
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
   const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [caption, setCaption] = useState("");
@@ -70,15 +79,24 @@ export default function MyNotesPage() {
   } | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const fetchNotes = useCallback(async () => {
+  const fetchNotesAndTopics = useCallback(async () => {
     try {
-      const res = await fetch("/api/notes");
-      if (res.ok) {
-        const data = await res.json();
+      const [notesRes, topicsRes] = await Promise.all([
+        fetch("/api/notes"),
+        fetch("/api/topics"),
+      ]);
+
+      if (notesRes.ok) {
+        const data = await notesRes.json();
         setItems(data.items || []);
       }
+
+      if (topicsRes.ok) {
+        const data = await topicsRes.json();
+        setAllTopics(data.topics || []);
+      }
     } catch (err) {
-      console.error("Error fetching notes:", err);
+      console.error("Error fetching notes or topics:", err);
     } finally {
       setLoading(false);
     }
@@ -88,11 +106,34 @@ export default function MyNotesPage() {
     if (authStatus === "unauthenticated") {
       router.push("/login");
     } else if (authStatus === "authenticated") {
-      fetchNotes();
+      fetchNotesAndTopics();
     }
-  }, [authStatus, router, fetchNotes]);
+  }, [authStatus, router, fetchNotesAndTopics]);
 
   const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
+
+  // Filter existing notes by search query
+  const filteredItems = useMemo(() => {
+    if (!searchQuery.trim()) return items;
+    const q = searchQuery.toLowerCase();
+    return items.filter(
+      (it) =>
+        it.topic.title.toLowerCase().includes(q) ||
+        it.topic.category.toLowerCase().includes(q) ||
+        (it.note?.caption && it.note.caption.toLowerCase().includes(q))
+    );
+  }, [items, searchQuery]);
+
+  // Filter catalog topics for direct note attachment search
+  const searchedCatalogTopics = useMemo(() => {
+    if (!searchQuery.trim()) return [];
+    const q = searchQuery.toLowerCase();
+    return allTopics.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        t.category.toLowerCase().includes(q)
+    );
+  }, [allTopics, searchQuery]);
 
   // Handle Note Deletion
   const handleDeleteNote = async (noteId: string) => {
@@ -110,15 +151,15 @@ export default function MyNotesPage() {
       const res = await fetch(`/api/notes/${noteId}`, { method: "DELETE" });
       if (res.ok) {
         router.refresh();
-        fetchNotes();
+        fetchNotesAndTopics();
       } else {
         const data = await res.json();
         alert(data.error || "Failed to delete note.");
-        fetchNotes();
+        fetchNotesAndTopics();
       }
     } catch {
       alert("Unexpected error deleting note.");
-      fetchNotes();
+      fetchNotesAndTopics();
     } finally {
       setDeletingNoteId(null);
     }
@@ -131,16 +172,17 @@ export default function MyNotesPage() {
         method: "POST",
       });
       if (res.ok) {
-        fetchNotes();
+        fetchNotesAndTopics();
       }
     } catch (err) {
       console.error("Failed to toggle visibility:", err);
     }
   };
 
-  // Open edit modal prefilled
+  // Open edit modal prefilled for existing item
   const openEditModal = (item: NoteItem) => {
     setEditTopic(item.topic);
+    setCustomTopicTitle("");
     if (item.note) {
       setEditingNoteId(item.note.id);
       setImageUrls(item.note.imageUrls || []);
@@ -152,6 +194,38 @@ export default function MyNotesPage() {
       setCaption("");
       setVisibility("private");
     }
+    setErrorMsg("");
+  };
+
+  // Open modal directly for a catalog topic or custom topic search
+  const openDirectTopicModal = (topic: Topic) => {
+    setEditTopic(topic);
+    setCustomTopicTitle("");
+    const existing = items.find((it) => it.topic.id === topic.id);
+    if (existing && existing.note) {
+      setEditingNoteId(existing.note.id);
+      setImageUrls(existing.note.imageUrls || []);
+      setCaption(existing.note.caption || "");
+      setVisibility(existing.note.visibility);
+    } else {
+      setEditingNoteId(null);
+      setImageUrls([]);
+      setCaption("");
+      setVisibility("private");
+    }
+    setShowDropdown(false);
+    setErrorMsg("");
+  };
+
+  // Open modal for brand-new custom topic title
+  const openCustomTopicModal = (title: string) => {
+    setEditTopic(null);
+    setCustomTopicTitle(title);
+    setEditingNoteId(null);
+    setImageUrls([]);
+    setCaption("");
+    setVisibility("private");
+    setShowDropdown(false);
     setErrorMsg("");
   };
 
@@ -189,9 +263,12 @@ export default function MyNotesPage() {
   // Submit note save
   const handleSaveNote = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editTopic) return;
-    if (imageUrls.length === 0) {
-      setErrorMsg("Please upload at least one image or PDF document.");
+    if (!editTopic && !customTopicTitle.trim()) {
+      setErrorMsg("Please select or enter a topic title.");
+      return;
+    }
+    if (imageUrls.length === 0 && !caption.trim()) {
+      setErrorMsg("Please upload at least one image/PDF attachment or write a research summary.");
       return;
     }
 
@@ -203,7 +280,9 @@ export default function MyNotesPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          topicId: editTopic.id,
+          topicId: editTopic ? editTopic.id : undefined,
+          customTitle: !editTopic ? customTopicTitle.trim() : undefined,
+          customCategory: "Custom Research",
           imageUrls,
           caption,
           visibility,
@@ -212,7 +291,8 @@ export default function MyNotesPage() {
 
       if (res.ok) {
         setEditTopic(null);
-        fetchNotes();
+        setCustomTopicTitle("");
+        fetchNotesAndTopics();
       } else {
         const data = await res.json();
         setErrorMsg(data.error || "Failed to save note.");
@@ -236,47 +316,151 @@ export default function MyNotesPage() {
   return (
     <div className="min-h-screen bg-[#0d0e11] text-[#e6e4df] py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#1e2026] pb-6 gap-4">
+      <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-[#1e2026] pb-6 gap-4">
         <div>
           <h1 className="font-serif-archive text-3xl sm:text-4xl font-extrabold text-[#e6e4df]">
             MY RESEARCH ARCHIVE
           </h1>
           <p className="font-mono-archive text-xs text-[#8a8c91] uppercase tracking-widest mt-1">
-            Completed Research, Handwritten Notes & PDF Storage
+            Search Any Topic & Attach Notes or PDF Files Anytime
           </p>
         </div>
 
-        <Link
-          href="/draw"
-          className="px-5 py-2.5 rounded bg-[#e6e4df] hover:bg-[#d6d4cf] text-[#0d0e11] font-mono-archive text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors self-start sm:self-auto"
-        >
-          <Sparkles className="w-4 h-4 text-[#0d0e11]" />
-          <span>DRAW NEW TOPIC</span>
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => openCustomTopicModal("")}
+            className="px-4 py-2.5 rounded bg-[#18191e] hover:bg-[#22242b] text-[#e6e4df] font-mono-archive text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors border border-[#282a33]"
+          >
+            <Plus className="w-4 h-4 text-[#e6e4df]" />
+            <span>ADD CUSTOM TOPIC</span>
+          </button>
+
+          <Link
+            href="/draw"
+            className="px-5 py-2.5 rounded bg-[#e6e4df] hover:bg-[#d6d4cf] text-[#0d0e11] font-mono-archive text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors"
+          >
+            <Sparkles className="w-4 h-4 text-[#0d0e11]" />
+            <span>DRAW RANDOM TOPIC</span>
+          </Link>
+        </div>
+      </div>
+
+      {/* TOPIC SEARCH & FREEDOM NOTE CREATOR BAR */}
+      <div className="relative z-30">
+        <div className="bg-[#14151a] border border-[#282a33] rounded-lg p-3 flex items-center gap-3 shadow-lg focus-within:border-[#383a47]">
+          <Search className="w-5 h-5 text-[#8a8c91] shrink-0" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setShowDropdown(true);
+            }}
+            onFocus={() => setShowDropdown(true)}
+            placeholder="Search any topic in catalog or type a new topic title to attach notes..."
+            className="w-full bg-transparent text-sm text-[#e6e4df] font-mono-archive focus:outline-none placeholder-[#6e7075]"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery("");
+                setShowDropdown(false);
+              }}
+              className="text-[#8a8c91] hover:text-white p-1"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Live Search & Direct Attach Dropdown */}
+        {showDropdown && searchQuery.trim().length > 0 && (
+          <div className="absolute left-0 right-0 top-full mt-2 bg-[#14151a] border border-[#282a33] rounded-lg shadow-2xl overflow-hidden max-h-80 overflow-y-auto z-40 divide-y divide-[#1e2026]">
+            {/* Matching Master Catalog Topics */}
+            {searchedCatalogTopics.length > 0 && (
+              <div className="p-2">
+                <div className="px-3 py-1 font-mono-archive text-[10px] text-[#8a8c91] uppercase tracking-widest">
+                  MATCHING MASTER TOPICS ({searchedCatalogTopics.length})
+                </div>
+                {searchedCatalogTopics.map((topic) => {
+                  const existingNote = items.find((it) => it.topic.id === topic.id);
+                  return (
+                    <div
+                      key={topic.id}
+                      onClick={() => openDirectTopicModal(topic)}
+                      className="px-3 py-2.5 rounded hover:bg-[#1f2128] cursor-pointer flex items-center justify-between transition-colors"
+                    >
+                      <div>
+                        <span className="font-mono-archive text-[10px] text-[#8a8c91] uppercase block">
+                          {topic.category}
+                        </span>
+                        <span className="font-serif-archive text-sm font-semibold text-[#e6e4df]">
+                          {topic.title}
+                        </span>
+                      </div>
+                      <span className="ink-stamp ink-stamp-drawn shrink-0">
+                        {existingNote?.note ? "EDIT ATTACHMENT" : "+ ATTACH NOTES"}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Custom Topic Creation Option */}
+            <div
+              onClick={() => openCustomTopicModal(searchQuery)}
+              className="p-3 bg-[#18191e] hover:bg-[#22242b] cursor-pointer flex items-center justify-between text-[#e6e4df] transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Plus className="w-4 h-4 text-[#e6e4df]" />
+                <span className="font-mono-archive text-xs">
+                  Create custom topic & attach notes for: <strong className="text-white">&ldquo;{searchQuery}&rdquo;</strong>
+                </span>
+              </div>
+              <span className="px-2.5 py-1 rounded bg-[#e6e4df] text-[#0d0e11] font-mono-archive text-[10px] font-bold uppercase">
+                CREATE & ATTACH
+              </span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Grid of Completed Topics & Notes */}
-      {items.length === 0 ? (
+      {filteredItems.length === 0 ? (
         <div className="archive-card p-12 text-center space-y-4 max-w-lg mx-auto my-12 border border-dashed border-[#282a33]">
           <div className="w-12 h-12 mx-auto rounded-full bg-[#14151a] border border-[#282a33] flex items-center justify-center text-[#8a8c91]">
             <BookOpen className="w-6 h-6" />
           </div>
           <h3 className="font-serif-archive text-xl font-bold text-[#e6e4df]">
-            NO RESEARCH NOTES ARCHIVED YET
+            {searchQuery ? "NO MATCHING RESEARCH NOTES FOUND" : "NO RESEARCH NOTES ARCHIVED YET"}
           </h3>
           <p className="font-mono-archive text-xs text-[#8a8c91]">
-            You haven&apos;t completed any topics or attached notes/PDFs yet. Head to the Draw deck to pull a random research topic!
+            {searchQuery
+              ? `No archived notes found matching "${searchQuery}". Click below to attach notes to this topic!`
+              : "Search any topic above or head to the Draw deck to pull a random research topic!"}
           </p>
-          <Link
-            href="/draw"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded bg-[#e6e4df] hover:bg-[#d6d4cf] text-[#0d0e11] font-mono-archive font-bold text-xs uppercase tracking-wider transition-colors"
-          >
-            <span>DRAW FIRST TOPIC</span>
-          </Link>
+
+          {searchQuery ? (
+            <button
+              onClick={() => openCustomTopicModal(searchQuery)}
+              className="inline-flex items-center gap-2 px-6 py-3 rounded bg-[#e6e4df] hover:bg-[#d6d4cf] text-[#0d0e11] font-mono-archive font-bold text-xs uppercase tracking-wider transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              <span>ATTACH NOTES TO &ldquo;{searchQuery}&rdquo;</span>
+            </button>
+          ) : (
+            <Link
+              href="/draw"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded bg-[#e6e4df] hover:bg-[#d6d4cf] text-[#0d0e11] font-mono-archive font-bold text-xs uppercase tracking-wider transition-colors"
+            >
+              <span>DRAW FIRST TOPIC</span>
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {items.map((item) => (
+          {filteredItems.map((item) => (
             <div key={item.progressId} className="archive-card flex flex-col justify-between overflow-hidden">
               {/* Note Thumbnail / PDF Preview */}
               <div className="h-48 bg-[#0d0e11] relative overflow-hidden border-b border-[#1e2026]">
@@ -432,11 +616,14 @@ export default function MyNotesPage() {
       )}
 
       {/* EDIT / UPLOAD MODAL */}
-      {editTopic && (
+      {(editTopic || customTopicTitle !== "") && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-[#14151a] border border-[#282a33] rounded-lg max-w-2xl w-full p-6 space-y-6 shadow-2xl relative my-8">
             <button
-              onClick={() => setEditTopic(null)}
+              onClick={() => {
+                setEditTopic(null);
+                setCustomTopicTitle("");
+              }}
               className="absolute top-4 right-4 text-[#8a8c91] hover:text-white p-1 rounded bg-[#18191e]"
             >
               <X className="w-5 h-5" />
@@ -447,7 +634,23 @@ export default function MyNotesPage() {
               <h2 className="font-serif-archive text-xl font-bold text-[#e6e4df] mt-2">
                 {editingNoteId ? "EDIT RESEARCH ATTACHMENTS" : "ATTACH RESEARCH NOTES OR PDF"}
               </h2>
-              <p className="font-mono-archive text-xs text-[#9a9c9f]">{editTopic.title}</p>
+
+              {!editTopic ? (
+                <div className="pt-2 space-y-2">
+                  <label className="block font-mono-archive text-[11px] text-[#8a8c91] uppercase">
+                    RESEARCH TOPIC TITLE
+                  </label>
+                  <input
+                    type="text"
+                    value={customTopicTitle}
+                    onChange={(e) => setCustomTopicTitle(e.target.value)}
+                    placeholder="e.g. Quantum Computing, Black Hole Entropy, Artificial Intelligence"
+                    className="w-full bg-[#0d0e11] border border-[#282a33] focus:border-[#383a47] rounded p-2.5 text-xs text-[#e6e4df] font-mono-archive focus:outline-none"
+                  />
+                </div>
+              ) : (
+                <p className="font-mono-archive text-xs text-[#9a9c9f]">{editTopic.title}</p>
+              )}
             </div>
 
             {errorMsg && (
@@ -583,7 +786,10 @@ export default function MyNotesPage() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => setEditTopic(null)}
+                    onClick={() => {
+                      setEditTopic(null);
+                      setCustomTopicTitle("");
+                    }}
                     className="px-4 py-2.5 rounded border border-[#282a33] text-[#8a8c91] hover:text-white"
                   >
                     CANCEL
@@ -594,7 +800,7 @@ export default function MyNotesPage() {
                     className="px-6 py-2.5 rounded bg-[#e6e4df] hover:bg-[#d6d4cf] text-[#0d0e11] font-bold uppercase disabled:opacity-50 flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
-                    <span>{saving ? "SAVING..." : "UPDATE ARCHIVE NOTE"}</span>
+                    <span>{saving ? "SAVING..." : "SAVE ARCHIVE NOTE"}</span>
                   </button>
                 </div>
               </div>
