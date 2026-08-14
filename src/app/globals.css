@@ -1,0 +1,123 @@
+@import "tailwindcss";
+
+:root {
+  --bg-archive: #0c0d0e;
+  --surface-card: #15171a;
+  --surface-card-hover: #1c1e23;
+  --border-card: #282c34;
+  --text-primary: #e6e8eb;
+  --text-secondary: #9096a2;
+  --text-muted: #616774;
+  --accent-stamp-red: #c93b3b;
+  --accent-stamp-amber: #d97706;
+  --accent-stamp-green: #10b981;
+}
+
+body {
+  background-color: var(--bg-archive);
+  color: var(--text-primary);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-serif-archive {
+  font-family: var(--font-cinzel), Georgia, serif;
+}
+
+.font-mono-archive {
+  font-family: var(--font-mono), 'Courier New', monospace;
+}
+
+/* Archival card styling */
+.archive-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border-card);
+  border-radius: 4px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  position: relative;
+  transition: all 0.2s ease-in-out;
+}
+
+.archive-card:hover {
+  border-color: #3f4450;
+  background: var(--surface-card-hover);
+}
+
+.archive-card-header {
+  border-bottom: 1px solid #232730;
+  padding: 0.75rem 1.25rem;
+}
+
+/* Ink stamp badges */
+.ink-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--font-mono), monospace;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.25rem 0.6rem;
+  border-radius: 2px;
+  border: 1.5px solid currentColor;
+}
+
+.ink-stamp-completed {
+  color: #ef4444;
+  border-color: #ef4444;
+  background-color: rgba(239, 68, 68, 0.08);
+  transform: rotate(-1.5deg);
+}
+
+.ink-stamp-drawn {
+  color: #f59e0b;
+  border-color: #f59e0b;
+  background-color: rgba(245, 158, 11, 0.08);
+  transform: rotate(1deg);
+}
+
+.ink-stamp-public {
+  color: #10b981;
+  border-color: #10b981;
+  background-color: rgba(16, 185, 129, 0.08);
+}
+
+.ink-stamp-private {
+  color: #6b7280;
+  border-color: #4b5563;
+  background-color: rgba(107, 114, 128, 0.08);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f1012;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #2b2f38;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #3f4452;
+}
+
+/* Rolodex reel keyframe animation */
+@keyframes slotSpin {
+  0% { transform: translateY(-100%); opacity: 0.2; }
+  50% { opacity: 0.8; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slot-spin {
+  animation: slotSpin 0.15s linear infinite;
+}
