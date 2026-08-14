@@ -1,16 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --bg-archive: #0c0d0e;
-  --surface-card: #15171a;
-  --surface-card-hover: #1c1e23;
-  --border-card: #282c34;
-  --text-primary: #e6e8eb;
-  --text-secondary: #9096a2;
-  --text-muted: #616774;
-  --accent-stamp-red: #c93b3b;
-  --accent-stamp-amber: #d97706;
-  --accent-stamp-green: #10b981;
+  --bg-archive: #090a0b;
+  --surface-card: #121417;
+  --surface-card-hover: #181a1f;
+  --border-card: #27272a;
+  --text-primary: #f4f4f5;
+  --text-secondary: #a1a1aa;
+  --text-muted: #71717a;
 }
 
 body {
@@ -31,65 +28,97 @@ body {
   font-family: var(--font-mono), 'Courier New', monospace;
 }
 
-/* Archival card styling */
+/* Archival card styling - Monochrome High Delight */
 .archive-card {
   background: var(--surface-card);
   border: 1px solid var(--border-card);
-  border-radius: 4px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   position: relative;
   transition: all 0.2s ease-in-out;
 }
 
 .archive-card:hover {
-  border-color: #3f4450;
+  border-color: #3f3f46;
   background: var(--surface-card-hover);
 }
 
 .archive-card-header {
-  border-bottom: 1px solid #232730;
+  border-bottom: 1px solid #27272a;
   padding: 0.75rem 1.25rem;
 }
 
-/* Ink stamp badges */
+/* Monochrome High-Delight Primary Button */
+.btn-monochrome-primary {
+  background-color: #ffffff;
+  color: #090a0b;
+  font-weight: 700;
+  border-radius: 4px;
+  transition: all 0.15s ease-in-out;
+  border: 1px solid #ffffff;
+}
+
+.btn-monochrome-primary:hover {
+  background-color: #e4e4e7;
+  border-color: #e4e4e7;
+  transform: translateY(-1px);
+}
+
+/* Monochrome High-Delight Secondary Button */
+.btn-monochrome-secondary {
+  background-color: #181a1f;
+  color: #f4f4f5;
+  font-weight: 600;
+  border: 1px solid #27272a;
+  border-radius: 4px;
+  transition: all 0.15s ease-in-out;
+}
+
+.btn-monochrome-secondary:hover {
+  background-color: #27272a;
+  border-color: #3f3f46;
+  color: #ffffff;
+}
+
+/* Ink stamp badges - Tactile Monochrome */
 .ink-stamp {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
   font-family: var(--font-mono), monospace;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 0.25rem 0.6rem;
-  border-radius: 2px;
+  padding: 0.25rem 0.65rem;
+  border-radius: 3px;
   border: 1.5px solid currentColor;
 }
 
 .ink-stamp-completed {
-  color: #ef4444;
-  border-color: #ef4444;
-  background-color: rgba(239, 68, 68, 0.08);
-  transform: rotate(-1.5deg);
+  color: #ffffff;
+  border-color: #71717a;
+  background-color: #18181b;
+  transform: rotate(-1deg);
 }
 
 .ink-stamp-drawn {
-  color: #f59e0b;
-  border-color: #f59e0b;
-  background-color: rgba(245, 158, 11, 0.08);
+  color: #e4e4e7;
+  border-color: #52525b;
+  background-color: #18181b;
   transform: rotate(1deg);
 }
 
 .ink-stamp-public {
-  color: #10b981;
-  border-color: #10b981;
-  background-color: rgba(16, 185, 129, 0.08);
+  color: #fafafa;
+  border-color: #52525b;
+  background-color: #181a1f;
 }
 
 .ink-stamp-private {
-  color: #6b7280;
-  border-color: #4b5563;
-  background-color: rgba(107, 114, 128, 0.08);
+  color: #a1a1aa;
+  border-color: #3f3f46;
+  background-color: #121417;
 }
 
 /* Custom scrollbars */
@@ -99,16 +128,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f1012;
+  background: #090a0b;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #2b2f38;
+  background: #27272a;
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f4452;
+  background: #3f3f46;
 }
 
 /* Rolodex reel keyframe animation */

@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
@@ -63,6 +64,28 @@ async function main() {
   }
 
   console.log(`Successfully seeded ${topicsData.length} master topics.`);
+
+  // Seed default Owner Account
+  const ownerEmail = "owner@thedraw.archive";
+  const ownerPass = "ownerpassword123";
+  const passwordHash = await bcrypt.hash(ownerPass, 10);
+
+  await prisma.user.upsert({
+    where: { email: ownerEmail },
+    update: {
+      role: "admin",
+      passwordHash,
+      name: "Platform Owner",
+    },
+    create: {
+      email: ownerEmail,
+      name: "Platform Owner",
+      passwordHash,
+      role: "admin",
+    },
+  });
+
+  console.log(`Successfully seeded Owner account (${ownerEmail}).`);
 }
 
 main()
