@@ -143,11 +143,22 @@ body {
 
 /* Rolodex Reel Keyframe Animation */
 @keyframes slotSpin {
-  0% { transform: translateY(-100%); opacity: 0.2; }
-  50% { opacity: 0.8; }
+  0% { transform: translateY(-20%); opacity: 0.5; }
+  50% { opacity: 0.85; }
   100% { transform: translateY(0); opacity: 1; }
 }
 
 .animate-slot-spin {
-  animation: slotSpin 0.15s linear infinite;
+  animation: slotSpin 0.12s linear infinite;
 }
+
+@keyframes landPop {
+  0% { transform: scale(0.96); opacity: 0.9; }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-land-pop {
+  animation: landPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+

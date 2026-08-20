@@ -61,6 +61,8 @@ export default function DrawPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [drawing, setDrawing] = useState(false);
+  const [isLanded, setIsLanded] = useState(false);
+  const [drawnTopicResult, setDrawnTopicResult] = useState<Topic | null>(null);
   const [reelTitle, setReelTitle] = useState<string>("");
 
   // Search & Filter state
@@ -115,6 +117,8 @@ export default function DrawPage() {
   const handleDrawTopic = async () => {
     if (drawing || !allTopics.length) return;
     setDrawing(true);
+    setIsLanded(false);
+    setDrawnTopicResult(null);
 
     const availableList = allTopics.filter((t) => t.userStatus === "available");
     if (!availableList.length) {
@@ -122,32 +126,57 @@ export default function DrawPage() {
       return;
     }
 
-    // Rolodex slot animation: rapidly cycle through titles for 2 seconds
-    let count = 0;
+    // Rolodex slot animation: rapidly cycle through titles
+    let reelIndex = 0;
     const interval = setInterval(() => {
-      const randomIndex = Math.floor(Math.random() * availableList.length);
-      setReelTitle(availableList[randomIndex].title);
-      count++;
-      if (count > 15) {
-        clearInterval(interval);
-      }
-    }, 100);
+      reelIndex = (reelIndex + 1) % availableList.length;
+      setReelTitle(availableList[reelIndex].title);
+    }, 80);
 
     try {
-      const res = await fetch("/api/draw", { method: "POST" });
+      const drawPromise = fetch("/api/draw", { method: "POST" });
+      const timerPromise = new Promise((resolve) => setTimeout(resolve, 1800));
+
+      const [res] = await Promise.all([drawPromise, timerPromise]);
       const data = await res.json();
 
-      setTimeout(() => {
-        clearInterval(interval);
-        if (data.currentDraw) {
-          setReelTitle(data.currentDraw.topic.title);
-        }
+      clearInterval(interval);
+
+      if (res.ok && data.currentDraw) {
+        // STOP the slot reel on the drawn topic!
+        setReelTitle(data.currentDraw.topic.title);
+        setDrawnTopicResult(data.currentDraw.topic);
+        setIsLanded(true);
+
+        // Hold landed state for 2.2 seconds so scholar can read the drawn topic
+        await new Promise((resolve) => setTimeout(resolve, 2200));
+
+        // Update drawState directly so there is zero UI flicker
+        setDrawState((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            currentDraw: data.currentDraw,
+            stats: {
+              ...prev.stats,
+              available: Math.max(0, prev.stats.available - 1),
+              drawn: 1,
+            },
+          };
+        });
+
+        setIsLanded(false);
         setDrawing(false);
         fetchDrawData();
-      }, 1600);
+      } else {
+        console.error("Draw API error:", data.error);
+        setIsLanded(false);
+        setDrawing(false);
+      }
     } catch (err) {
       console.error("Draw request failed:", err);
       clearInterval(interval);
+      setIsLanded(false);
       setDrawing(false);
     }
   };
@@ -390,13 +419,42 @@ export default function DrawPage() {
             /* Slot Machine Draw Button State */
             <div className="space-y-6 py-6">
               {drawing ? (
-                <div className="bg-[#0e0f12] border border-amber-900/60 p-8 rounded-lg space-y-3 min-h-[140px] flex flex-col items-center justify-center">
-                  <span className="font-mono-archive text-xs text-amber-400 uppercase tracking-widest animate-pulse">
-                    SHUFFLING MASTER TOPIC DECK...
-                  </span>
-                  <h2 className="font-serif-archive text-2xl sm:text-3xl font-bold text-zinc-100 animate-slot-spin">
-                    {reelTitle || "Selecting Topic..."}
-                  </h2>
+                <div
+                  className={`p-8 rounded-lg space-y-4 min-h-[160px] flex flex-col items-center justify-center transition-all duration-300 ${
+                    isLanded
+                      ? "bg-amber-950/40 border-2 border-amber-400/80 shadow-2xl shadow-amber-900/50 animate-land-pop"
+                      : "bg-[#0e0f12] border border-amber-900/60 shadow-inner"
+                  }`}
+                >
+                  {isLanded ? (
+                    <>
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-amber-500/20 border border-amber-400 text-amber-300 font-mono-archive text-xs uppercase tracking-widest font-bold">
+                        <Sparkles className="w-4 h-4 text-amber-400 animate-spin" />
+                        <span>🎯 TOPIC DRAWN & SELECTED!</span>
+                      </div>
+                      {drawnTopicResult?.category && (
+                        <span className="font-mono-archive text-xs text-amber-400 uppercase tracking-widest font-semibold">
+                          {drawnTopicResult.category}
+                        </span>
+                      )}
+                      <h2 className="font-serif-archive text-2xl sm:text-4xl font-extrabold text-white text-center leading-tight">
+                        {reelTitle}
+                      </h2>
+                      <p className="font-mono-archive text-[11px] text-zinc-400 tracking-wider uppercase">
+                        Locking research deck... Loading topic workspace...
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <span className="font-mono-archive text-xs text-amber-400 uppercase tracking-widest animate-pulse flex items-center gap-2">
+                        <Sparkles className="w-3.5 h-3.5 animate-spin" />
+                        <span>SHUFFLING MASTER TOPIC DECK...</span>
+                      </span>
+                      <h2 className="font-serif-archive text-2xl sm:text-3xl font-bold text-zinc-100 animate-slot-spin">
+                        {reelTitle || "Selecting Topic..."}
+                      </h2>
+                    </>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-6">
